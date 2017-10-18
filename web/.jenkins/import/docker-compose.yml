@@ -1,0 +1,44 @@
+version: '3.0'
+services:
+  database:
+    image: build.datapunt.amsterdam.nl:5000/atlas/postgres
+    environment:
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_USER: sportparken
+
+  importer:
+    image: build.datapunt.amsterdam.nl:5000/datapunt/sportparken:${ENVIRONMENT}
+    links:
+      - database
+    environment:
+      DATABASE_NAME: sportparken
+      DATABASE_USER: sportparken
+      DATABASE_PASSWORD: insecure
+      DATABASE_HOST_OVERRIDE: database
+      DATABASE_PORT_OVERRIDE: 5432
+    command: >
+      bash -c "/app/.jenkins/docker-wait.sh \
+              && python manage.py migrate \
+              && python manage.py run_import \
+              && python manage.py run_bag_key_conversions\
+              && python manage.py run_import_validation\
+              && python manage.py run_refresh_materialized_views"
+
+  db-backup:
+    image: build.datapunt.amsterdam.nl:5000/atlas/postgres
+    links:
+      - database:db
+    volumes:
+      - ./backups:/tmp/backups
+    command: >
+      bash -c "echo db:5432:sportparken:sportparken:insecure > ~/.pgpass \
+              && chmod 600 ~/.pgpass \
+              && pg_dump --clean \
+                          -Fc \
+                          -t dataset* \
+                          -t geo*  \
+                          -t django_migrations  \
+                          -T auth*    \
+                          -U sportparken \
+                          -h db -p 5432 \
+                          sportparken > /tmp/backups/database.dump"

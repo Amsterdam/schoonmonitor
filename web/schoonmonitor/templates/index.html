@@ -1,0 +1,183 @@
+{% load staticfiles %}
+{% load leaflet_tags %}
+<html>
+
+	<head>
+		{% leaflet_js %}
+		{% leaflet_css %}
+		<style type="text/css">
+			html {
+				font-family: "Corbel";
+				font-size: 12px; 
+				margin: 0px;
+				padding: 0px; 
+			}
+			
+			table { 
+				font-size: 12px; 
+			}
+
+			#gis {width: 80%; height: 700px;}
+
+		</style>
+		<title>Schoonmonitor Amsterdam</title>
+		<meta charset="utf-8" />
+		<link rel="icon" href="https://www.amsterdam.nl/favicon.ico" type="image/x-icon">
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+		<script type="text/javascript" src="{% static '/js/leaflet.ajax.min.js' %}"></script>
+		<script type="text/javascript" src="{% static '/js/leaflet.wms.js' %}"></script>
+		<script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.4.2/b-html5-1.4.2/datatables.min.css"/>
+ 
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
+		<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.4.2/b-html5-1.4.2/datatables.min.js"></script>
+		<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.min.js"></script>
+		<link href="https://cdn.datatables.net/buttons/1.4.2/css/buttons.dataTables.min.css" rel="stylesheet" type="text/css">
+	</head>
+
+	<body>
+		<div><h1>Metingen, Meldingen Amsterdam<h1></div>
+
+		<script type="text/javascript" >
+		
+
+        dataSet = [];
+		columns = [];
+
+		function loadData(map, options) {
+	   		var metingen = new L.geoJson.ajax("http://localhost:8000/schoonmonitor/api/beeldmaatlatten?format=json", { 
+	   		  
+              onEachFeature: function onEachFeature(feature, layer) {
+
+              	//console.log(feature);
+                var props = feature.properties;
+
+                // Run function to generate Table
+                //fillTable(feature)
+                //console.log(props);
+            	    
+                // Create popup content dynamically
+
+     //            content = '<ul>'
+			 	// for (var key in props) {
+			  //   	if (props.hasOwnProperty(key) && props[key] != null) {
+			  //       	console.log(key + " -> " + props[key]);
+			  //       	var value = String(props[key]);
+			  //       	if (key == 'Projectnaam'){
+			  //       		content += '<h2>' + value + '</h2>'
+			  //       		continue
+			  //       	}
+			  //       	if (key == 'startdatum'){
+			  //       		var startdatum = value;
+			  //       		continue
+			  //       	}
+			  //       	if (key == 'einddatum'){
+			  //       		var einddatum = value;
+			  //       	} 
+			  //       	if (key == 'email'){
+			        		
+			  //       	} 
+			  //       	if (startdatum && einddatum) {
+			  //       		content += '<p>Periode: ' + startdatum + ' t/m ' +einddatum +'</p>';
+			  //       	}
+			  //       	else {
+    	// 					content += '<li>'+key + ':' + value + '</li>';
+    	// 				}
+			  //     	}
+			  //   }
+			  //   content += '</ul>'
+
+                var content = `<h3>${props.Bestekspost}</h3><p>${props.Score}</p><p>Periode: ${props.Aanmaakdatum_score}</p>`;
+                //var content = '<h3>test</h3>';
+   // var content = `<h3>${props.Projectnaam}</h3><p>${props.Type}</p><p>Periode: ${props.startdatum} t/m ${props.einddatum}</p><table><tr><td>Opdrachtverantwoordelijke:</td><td><a href="mailto:${props.Opdrachtverantwoordelijke.Email}">${props.Opdrachtverantwoordelijke.Voornaam} ${props.Opdrachtverantwoordelijke.Achternaam}</a></td></tr><tr><tr><td></td><td>${props.Opdrachtverantwoordelijke.Telefoon}</td></tr></table>`;
+
+
+                layer.bindPopup(content);
+
+
+
+
+
+            }});
+
+            var overlays = {
+              "Stadsdelen": L.WMS.overlay('https://map.data.amsterdam.nl/maps/gebieden',
+                              { layers: 'stadsdeel,stadsdeel_label',
+                                format: 'image/png',
+                                transparent: true
+                                }),
+              "Gebieden":   L.WMS.overlay('https://map.data.amsterdam.nl/maps/gebieden',
+                              { layers: 'gebiedsgerichtwerken,gebiedsgerichtwerken_label',
+                                format: 'image/png',
+                                transparent: true
+                                }),
+              "Wijken":     L.WMS.overlay('https://map.data.amsterdam.nl/maps/gebieden',
+                              { layers: 'buurtcombinatie,buurtcombinatie_label',
+                                format: 'image/png',
+                                transparent: true
+                                }),
+              "Buurten":    L.WMS.overlay('https://map.data.amsterdam.nl/maps/gebieden',
+                              { layers: 'buurt,buurt_label',
+                                format: 'image/png',
+                                transparent: true
+                                }),
+              "Luchtfoto":    L.WMS.overlay('https://map.data.amsterdam.nl/maps/lufo',
+                              { layers: 'lufo2016',
+                                format: 'image/png',
+                                transparent: false
+                                })
+            
+              };   
+        
+            var meldingen = new L.geoJson.ajax("http://localhost:8000/schoonmonitor/api/meldingen?format=json", {
+                onEachFeature: function onEachFeature(feature, layer) {
+
+                //console.log(feature);
+                    var props = feature.properties;
+
+                  var content = `<h3>${props.Hoofdrubriek}</h3><p>${props.Subrubriek}</p><p>Periode: ${props.Datummelding}</p>`;
+
+
+                    layer.bindPopup(content);
+
+
+
+                   } })
+        
+       var overlayMaps = {
+                  "Meldingen": meldingen,
+                  "Metingen": metingen
+
+            };
+     
+
+
+            metingen.addTo(map);    
+            //meldingen.addTo(map);
+            //Load control layers 
+            L.control.layers(overlays, overlayMaps).addTo(map); 
+
+      
+            // Load default baselayer
+            //baseLayers['Openstreetmap'].addTo(map);
+            // Load default overlay
+            //overlays['Luchtfoto'].addTo(self.myMap);
+           
+            overlays['Stadsdelen'].addTo(map).setOpacity(1);
+           
+			
+		}	
+
+		
+
+		</script>
+		<div class="content-wrapper">
+
+		{% leaflet_map "gis" callback="window.loadData" %}
+		<!--<table id="properties"></table>-->
+		<!--<table id="example" class="display" width="100%"></table>-->
+		</div>
+	</body>
+</html>

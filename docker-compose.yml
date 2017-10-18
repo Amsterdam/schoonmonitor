@@ -1,0 +1,32 @@
+version: "3.0"
+services:
+  database:
+    build: ./database
+    ports:
+      - "5403:5432"
+    environment:
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: schoonmonitor
+      POSTGRES_USER: schoonmonitor
+  web:
+    build: ./web
+    ports:
+      - "8117:8001"
+    links:
+      - database:database
+    environment:
+      DB_NAME: schoonmonitor
+      DB_PASSWORD: insecure
+      UWSGI_HTTP: ":8001"
+      UWSGI_MODULE: "schoonmonitor.wsgi:application"
+      UWSGI_PROCESSES: 4
+      UWSGI_MASTER: 1
+      UWSGI_STATIC_MAP: "/schoonmonitor/static=/static"
+  importer:
+      build: ./importer
+      links:
+        - database:database
+      environment:
+        # Following are secret, should be provided as environment variables.
+        DRUKTEMETER_OBJECTSTORE_PASSWORD:
+        

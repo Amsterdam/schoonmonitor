@@ -1,0 +1,8 @@
+[druktemeter]
+ST_AUTH_VERSION=2.0
+OS_AUTH_URL=https://identity.stack.cloudvps.com/v2.0
+OS_USERNAME=druktemeter
+OS_PASSWORD=Use env variable DRUKTEMETER_OBJECTSTORE_PASSWORD
+OS_TENANT_NAME=druktemeter
+OS_PROJECT_ID=97d77d9423fe46df8675937493b8521e
+OS_REGION_NAME=NL
