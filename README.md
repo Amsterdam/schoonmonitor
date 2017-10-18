@@ -30,7 +30,17 @@ Before you can login to the site, you must create the tables and an admin userac
 ./web/manage.py createsuperuser
 ```
 
-Load the data (data is not provided, still working on openstack connection)
+Set the openstack password in your environment:
+```
+SET ENV SCHOONMONITOR_OBJECTSTORE_PASSWORD = yourpassword
+
+or on Unix
+
+EXPORT SCHOONMONITOR_OBJECTSTORE_PASSWORD = yourpassword
+```
+
+
+Load the data (data is not provided, still working on openstack connection, but if you have 2 csv files the import can be done with this:)
 ```
 ./importer/import.py
 ```
