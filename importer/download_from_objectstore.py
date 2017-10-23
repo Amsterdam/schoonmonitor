@@ -26,27 +26,27 @@ logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 config = configparser.RawConfigParser()
 config.read('config.auth')
 
-OBJECTSTORE_PASSWORD = os.environ['DRUKTEMETER_OBJECTSTORE_PASSWORD']
+OBJECTSTORE_PASSWORD = os.environ['EXTERN_DATASERVICES_PASSWORD']
 
 
 OS_CONNECT = {
-    'auth_version': config.get('druktemeter','ST_AUTH_VERSION'),
-    'authurl': config.get('druktemeter','OS_AUTH_URL'),
-    'tenant_name': config.get('druktemeter','OS_TENANT_NAME'),
-    'user': config.get('druktemeter','OS_USERNAME'),
+    'auth_version': config.get('extern_dataservices','ST_AUTH_VERSION'),
+    'authurl': config.get('extern_dataservices','OS_AUTH_URL'),
+    'tenant_name': config.get('extern_dataservices','OS_TENANT_NAME'),
+    'user': config.get('extern_dataservices','OS_USERNAME'),
     'os_options': {
-        'tenant_id': config.get('druktemeter','OS_PROJECT_ID'),  # Project ID
-        'region_name': config.get('druktemeter','OS_REGION_NAME')
+        'tenant_id': config.get('extern_dataservices','OS_PROJECT_ID'),  # Project ID
+        'region_name': config.get('extern_dataservices','OS_REGION_NAME')
     },
     'key': OBJECTSTORE_PASSWORD
 }
 
 
 DATASETS = set([
-    'MORA',
-    'testuploadfolder',
+    'Dataservices'
 ])
 
+prefix = 'aanvalsplan_schoon/crow'
 
 def get_full_container_list(conn, container, **kwargs):
 
@@ -69,15 +69,20 @@ def get_full_container_list(conn, container, **kwargs):
     return seed
 
 
-def download_container(conn, container, datadir):
-    target_dir = os.path.join(datadir, container['name'])
+def download_container(conn, container, prefix, datadir):
+    target_dir = os.path.join(datadir, prefix)
     os.makedirs(target_dir)  # will error out if directory exists
-    content = get_full_container_list(conn, container['name'])
+    
+    content = get_full_container_list(conn, container['name'],prefix=prefix)
+    #print(content)
     for obj in content:
-        target_filename = os.path.join(target_dir, obj['name'])
-        with open(target_filename, 'wb') as new_file:
-            _, obj_content = conn.get_object(container['name'], obj['name'])
-            new_file.write(obj_content)
+        if obj['content_type']!='application/directory':
+            target_filename = os.path.join(datadir, obj['name'])
+            #target_filename = obj['name']
+            with open(target_filename, 'wb') as new_file:
+                _, obj_content = conn.get_object(container['name'], obj['name'])
+                new_file.write(obj_content)
+        logger.debug('Written file obj['name']')
 
 
 def download_containers(conn, datasets, datadir):
@@ -102,13 +107,19 @@ def download_containers(conn, datasets, datadir):
         else:
             raise Exception('Local data directory not empty!')
 
-    logger.debug('Establishing object store connection.')
+    #logger.debug('Establishing object store connection.')
     resp_headers, containers = conn.get_account()
 
     logger.debug('Downloading containers ...')
+    #dirName ='crow'
+
+    #containers = conn.get_container('Dataservices',
+     #                            prefix='aanvalsplan_schoon/'+ dirName,)
+    #print(containers)
+
     for c in containers:
         if c['name'] in datasets:
-            download_container(conn, c, datadir)
+            download_container(conn, c, prefix, datadir)
 
 
 def main(datadir):
@@ -124,7 +135,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Check whether local cached downloads should be used.
-    ENV_VAR = 'DRUKTEMETER_USE_LOCAL'
+    ENV_VAR = 'EXTERNAL_DATASERVICES_USE_LOCAL'
     use_local = True if os.environ.get(ENV_VAR, '') == 'TRUE' else False
 
     if not use_local:
