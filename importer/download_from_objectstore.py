@@ -24,7 +24,7 @@ FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
 config = configparser.RawConfigParser()
-config.read('config.auth')
+config.read('auth.conf')
 
 OBJECTSTORE_PASSWORD = os.environ['EXTERN_DATASERVICES_PASSWORD']
 

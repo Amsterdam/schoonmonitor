@@ -30,13 +30,14 @@ Before you can login to the site, you must create the tables and an admin userac
 ./web/manage.py createsuperuser
 ```
 
-Set the openstack password in your environment:
+Set the openstack config in auth.conf by using and renaming auth.conf-example
+and set the openstack password in your environment:
 ```
-SET ENV SCHOONMONITOR_OBJECTSTORE_PASSWORD = yourpassword
+SET ENV EXTERNAL_DATASERVICES_PASSWORD = yourpassword
 
 or on Unix
 
-EXPORT SCHOONMONITOR_OBJECTSTORE_PASSWORD = yourpassword
+EXPORT EXTERNAL_DATASERVICES_PASSWORD = yourpassword
 ```
 
 
