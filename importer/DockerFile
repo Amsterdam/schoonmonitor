@@ -1,7 +1,8 @@
 FROM amsterdam/docker_python:latest
 
 #RUN mkdir /app
-RUN mkdir /data
+RUN rm -rf /data2
+RUN mkdir /data2
 
 ADD /requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt

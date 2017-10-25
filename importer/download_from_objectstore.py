@@ -82,7 +82,7 @@ def download_container(conn, container, prefix, datadir):
             with open(target_filename, 'wb') as new_file:
                 _, obj_content = conn.get_object(container['name'], obj['name'])
                 new_file.write(obj_content)
-        logger.debug('Written file obj['name']')
+        logger.debug('Written file '+obj['name'])
 
 
 def download_containers(conn, datasets, datadir):
