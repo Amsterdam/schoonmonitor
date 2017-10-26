@@ -33,6 +33,10 @@ class NonZeroReturnCode(Exception):
     pass
 
 
+# -----------------------------------------------
+# Functions
+# -----------------------------------------------
+
 def scrub(l):
     out = []
     for x in l:
@@ -56,7 +60,7 @@ def run_command_sync(cmd, allow_fail=False):
 
 
 def wfs2psql(url, pg_str, layer_name, **kwargs):
-    cmd = ['ogr2ogr','-overwrite','-t_srs', 'EPSG:4326', '-nln', layer_name, '-F', 'PostgreSQL', pg_str, url]
+    cmd = ['ogr2ogr','-overwrite','-t_srs', 'EPSG:28992', '-nln', layer_name, '-F', 'PostgreSQL', pg_str, url]
     run_command_sync(cmd)
 
 
@@ -65,21 +69,26 @@ def get_pg_str(host, user, dbname, password):
         host, user, dbname, password
     )
 
-
 def esri_json2psql(json_filename, pg_str, layer_name, **kwargs):
     # first attempt:
     # https://gis.stackexchange.com/questions/13029/converting-arcgis-server-json-to-geojson
     cmd = ['ogr2ogr', '-t_srs', 'EPSG:28992', '-nln', layer_name, '-F', 'PostgreSQL', pg_str, json_filename]
     run_command_sync(cmd)
 
+
+# -----------------------------------------------
+# Load FILES or SERVICES
+# -----------------------------------------------
+
 def load_gebieden(pg_str):
     areaNames = ['stadsdeel', 'buurt', 'buurtcombinatie', 'gebiedsgerichtwerken']
+    srsName = 'EPSG:28992'
     for areaName in areaNames:
-        WFS="https://map.data.amsterdam.nl/maps/gebieden?REQUEST=GetFeature&SERVICE=wfs&Version=2.0.0&SRSNAME=EPSG:4326&typename=" + areaName
+        WFS="https://map.data.amsterdam.nl/maps/gebieden?REQUEST=GetFeature&SERVICE=wfs&Version=2.0.0&SRSNAME=" + srsName + "&typename=" + areaName
         wfs2psql(WFS, pg_str , areaName)
         print(areaName + ' loaded into PG.')
 
-# -----------------------------------------------
+
 def load_crow(datadir):
     # This contains knowledge about the data layout
     #CROW_COLUMNS = OrderedDict([
@@ -112,7 +121,7 @@ def load_crow(datadir):
         if ('minx') in data.columns and ('lat') not in data.columns:
             data['RD-X'] = (data['minx'] + data['maxx']) / 2
             data['RD-Y'] = (data['miny'] + data['maxy']) / 2
-            print(data)
+            #print(data)
             # convert RD N to WGS84 into Series
             #latlon = data.apply(lambda row: proj.transform(crs_rd, crs_wgs, row['RD-X'], row['RD-Y']), axis=1).apply(pd.Series)
             #print(latlon)
@@ -140,15 +149,23 @@ def load_crow(datadir):
     df.to_sql(tableName, engine, if_exists='replace') #,  dtype={geom: Geometry('POINT', srid='4326')})
     print(tableName + ' added')
 
+
+
 def main(datadir):
     pg_str = get_pg_str('database', 'schoonmonitor', 'schoonmonitor', 'insecure')
     #path = os.getcwd()
     load_crow(datadir)
     load_gebieden(pg_str)
+
 if __name__ == '__main__':
     desc = 'Upload crow datasets into PostgreSQL.'
     parser = argparse.ArgumentParser(desc)
     parser.add_argument(
         'datadir', type=str, help='Local data directory', nargs=1)
     args = parser.parse_args()
-    main(args.datadir[0])
+    # Check whether local cached downloads should be used.
+    ENV_VAR = 'EXTERNAL_DATASERVICES_USE_LOCAL'
+    use_local = True if os.environ.get(ENV_VAR, '') == 'TRUE' else False
+
+    if not use_local:
+        main(args.datadir[0])
