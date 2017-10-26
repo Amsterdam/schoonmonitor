@@ -11,6 +11,9 @@ import pandas as pd
 #from shapely.geometry import Point, wkb_hex
 import pyproj as proj
 
+config = configparser.RawConfigParser()
+config.read('auth.conf')
+
 # setup your projections
 crs_wgs = proj.Proj(init='epsg:4326') # assuming you're using WGS84 geographic
 crs_rd = proj.Proj(init='epsg:28992') # use a locally appropriate projected CRS
@@ -19,13 +22,14 @@ crs_rd = proj.Proj(init='epsg:28992') # use a locally appropriate projected CRS
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 
+  
 LOCAL_POSTGRES_URL = URL(
     drivername='postgresql',
-    username='schoonmonitor',
-    password='insecure',
-    host='database',
-    #port='5432',
-    database='schoonmonitor'
+    username=config.get(dbConfig,'user'),
+    password=config.get(dbConfig,'password'),
+    host=config.get(dbConfig,'host'),
+    port=config.get(dbConfig,'port'),
+    database=config.get(dbConfig,'dbname')
 )
 
 
@@ -108,6 +112,9 @@ def load_crow(datadir):
         data = pd.read_excel(datadir + '/' + f)
         if ('Schouwronde') not in data.columns:
             data['Schouwronde'] = f
+        if ('Aanmaakdatum_score') in data.columns:
+            data.rename(columns={'Aanmaakdatum_score': 'Aanmaakdatum score'}, inplace=True)
+            data["Aanmaakdatum score"].apply(pd.to_datetime)
         #print(data.columns)
         # duplicate lat/lon
         if ('Latitude') in data.columns:
@@ -152,7 +159,8 @@ def load_crow(datadir):
 
 
 def main(datadir):
-    pg_str = get_pg_str('database', 'schoonmonitor', 'schoonmonitor', 'insecure')
+     pg_str = get_pg_str(config.get(dbConfig,'host'),config.get(dbConfig,'port'),config.get(dbConfig,'dbname'), config.get(dbConfig,'user'), config.get(dbConfig,'password'))
+   
     #path = os.getcwd()
     load_crow(datadir)
     load_gebieden(pg_str)

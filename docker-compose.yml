@@ -26,7 +26,14 @@ services:
       build: ./importer
       links:
         - database:database
+      volumes:
+        - ./data:/data
       environment:
+        DATABASE_NAME: schoonmonitor
+        DATABASE_USER: schoonmonitor
+        DATABASE_PASSWORD: insecure
         # Following are secret, should be provided as environment variables.
-        DRUKTEMETER_OBJECTSTORE_PASSWORD:
-        
+        EXTERN_DATASERVICES_PASSWORD:
+      command: >
+        bash -c "/app/run_import.sh \
+               && /app/run_additional_sql.sh"

@@ -46,7 +46,8 @@ DATASETS = set([
     'Dataservices'
 ])
 
-prefix = 'aanvalsplan_schoon/crow'
+prefixes = ['aanvalsplan_schoon/crow',
+            'aanvalsplan_schoon/mora']
 
 def get_full_container_list(conn, container, **kwargs):
 
@@ -119,7 +120,8 @@ def download_containers(conn, datasets, datadir):
 
     for c in containers:
         if c['name'] in datasets:
-            download_container(conn, c, prefix, datadir)
+            for prefix in prefixes:
+                download_container(conn, c, prefix, datadir)
 
 
 def main(datadir):

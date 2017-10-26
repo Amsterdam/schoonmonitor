@@ -95,6 +95,30 @@ ALTER TABLE crowscores_totaal
 ADD PRIMARY KEY (id);
 """
 
+crowscoresView = """
+create view
+  crowscores_csv
+as select
+  "Schouwronde", 
+  "Volgnummer inspectie", 
+  "Volgnummer score", 
+  "Aanmaakdatum score"::timestamp as "Aanmaakdatum score", 
+  "Inspecteur", 
+  "Bestekspost", 
+  "Score", 
+  buurtcode, 
+  buurtnaam,
+  verblijfin, 
+  wijkcode, 
+  wijknaam
+  stadsdeelcode,
+  gebiedscode,
+  gebiedsnaam, 
+  stadsdeelnaam, 
+  lon,lat
+from
+  crowscores_totaal
+"""
 
 def execute_sql(pg_str, sql):
     with psycopg2.connect(pg_str) as conn:
@@ -136,7 +160,8 @@ def main(dbConfig):
     print('geometry field created')
     execute_sql(pg_str, addAreaCodes)
     print('areaCode fields added')
-
+    execute_sql(pg_str, crowscoresView)
+    print('csv view Created')
 
 if __name__ == '__main__':
     desc = "Run additional SQL."
