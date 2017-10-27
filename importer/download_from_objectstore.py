@@ -46,8 +46,8 @@ DATASETS = set([
     'Dataservices'
 ])
 
-prefixes = ['aanvalsplan_schoon/crow',
-            'aanvalsplan_schoon/mora']
+prefixes = ['aanvalsplan_schoon/crow']
+            #,'aanvalsplan_schoon/mora']
 
 def get_full_container_list(conn, container, **kwargs):
 

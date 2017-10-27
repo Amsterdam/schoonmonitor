@@ -4,11 +4,12 @@ import subprocess
 import logging
 import argparse
 from collections import OrderedDict
+import configparser
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
+
 import pandas as pd
-#from shapely.geometry import Point, wkb_hex
 import pyproj as proj
 
 config = configparser.RawConfigParser()
@@ -21,16 +22,6 @@ crs_rd = proj.Proj(init='epsg:28992') # use a locally appropriate projected CRS
 
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
-
-  
-LOCAL_POSTGRES_URL = URL(
-    drivername='postgresql',
-    username=config.get(dbConfig,'user'),
-    password=config.get(dbConfig,'password'),
-    host=config.get(dbConfig,'host'),
-    port=config.get(dbConfig,'port'),
-    database=config.get(dbConfig,'dbname')
-)
 
 
 class NonZeroReturnCode(Exception):
@@ -68,9 +59,9 @@ def wfs2psql(url, pg_str, layer_name, **kwargs):
     run_command_sync(cmd)
 
 
-def get_pg_str(host, user, dbname, password):
-    return 'PG:host={} user={} dbname={} password={}'.format(
-        host, user, dbname, password
+def get_pg_str(host, port, user, dbname, password):
+    return 'PG:host={} port={} user={} dbname={} password={}'.format(
+        host, port, user, dbname, password
     )
 
 def esri_json2psql(json_filename, pg_str, layer_name, **kwargs):
@@ -93,7 +84,7 @@ def load_gebieden(pg_str):
         print(areaName + ' loaded into PG.')
 
 
-def load_crow(datadir):
+def load_crow(datadir, dbConfig):
     # This contains knowledge about the data layout
     #CROW_COLUMNS = OrderedDict([
     #    ('BU_CODE', str),
@@ -110,24 +101,78 @@ def load_crow(datadir):
     df = pd.DataFrame()
     for f in files_xls:
         data = pd.read_excel(datadir + '/' + f)
-        if ('Schouwronde') not in data.columns:
-            data['Schouwronde'] = f
-        if ('Aanmaakdatum_score') in data.columns:
-            data.rename(columns={'Aanmaakdatum_score': 'Aanmaakdatum score'}, inplace=True)
-            data["Aanmaakdatum score"].apply(pd.to_datetime)
+        if data.empty:
+            print('no data')
+            continue
+        #print('start')
+        #print(data.head(1))
+        #if ('Schouwronde') not in data.columns:
+        #    data['Schouwronde'] = f
+        def renameTitles(data, listItems):
+            for k,v in listItems.items():
+                if k in data.columns:
+                    data.rename(columns={k:v}, inplace=True)
+            return data
+        #if 'Well ID (c' in data.columns:
+        #    del data['Well ID (c']
+        #if 'Well ID (customer)' in data.columns:
+        #    del data['Well ID (customer)']
+        list2Replace = {'Aanmaakdatum_score':'Aanmaakdatum score',
+                        'Containert': 'Containertype',
+                        'Serienumme': 'Serienummer',
+                        'Volume con': 'Volume containertype',
+                        #'Well ID (c': 'Well ID container',
+                        #'XMIN': 'minx',
+                        #'XMAX': 'maxx',
+                        #'YMAX': 'maxy',
+                        #'YMIN': 'miny',
+                        #'Latitude': 'lat',
+                        #'Longitude': 'lon',
+                        'Breedtegraad': 'lat',
+                        'Lengtegraad': 'lon',
+                        #'Well ID (container)': 'Well ID container',
+                        #'Well ID (customer)': 'Well ID customer',
+                        #'X':'RD-X',
+                        #'Y':'RD-Y'
+                        }
+        data.rename(columns=lambda x: x.replace("(", '').replace(')', ''), inplace=True)
+        data = renameTitles(data, list2Replace)
+
+        #newSet = pd.DataFrame()
+        #newSet['Aanmaakdatum score'] = data['Aanmaakdatum score']
+        #newSet['Inspecteur'] = data['Inspecteur']
+        #newSet['Volgnummer inspectie'] = data['Volgnummer inspectie']
+        #newSet['Volgnummer score'] = data['Volgnummer score']
+        ##newSet['Score'] = data['Score']
+        #if 'maxx' in data.columns:
+        #    newSet['maxx'] = data['maxx']
+        #    newSet['maxy'] = data['maxy']
+        #    newSet['minx'] = data['minx']
+        ##    newSet['miny'] = data['miny']
+        #if 'lat' in data.columns:
+        #    print(data['lat'])
+        #    newSet['lat'] = data['lat']
+        ##    newSet['lon'] = data['lon']
+        #if 'RD-X' in data.columns:
+        #    newSet['RD-X'] = data['RD-X']
+        #    newSet['RD-Y'] = data['RD-Y']
+        #if 'Adres' in data.columns:
+        #   newSet['Adres'] = data['Adres']
+        #if 'Containertype' in data.columns:
+        #    newSet['Containertype'] = data['Containertype']
+        #df = df.append(newSet, ignore_index=True)
+
+        df = df.append(data, ignore_index=True)
+        print("added " + f)
+        #print(df.tail(1))
+        #data["Aanmaakdatum score"].apply(pd.to_datetime)
+     
         #print(data.columns)
-        # duplicate lat/lon
-        if ('Latitude') in data.columns:
-            data['lat'] = data['Latitude']
-            data['lon'] = data['Longitude']
-        # duplicate Breedtegraad
-        if ('Breedtegraad') in data.columns:
-            data['lat'] = data['Breedtegraad']
-            data['lon'] = data['Lengtegraad']
+
         # convert RD bbox to lat lon, but skip 2014-2017 which is already converted
-        if ('minx') in data.columns and ('lat') not in data.columns:
-            data['RD-X'] = (data['minx'] + data['maxx']) / 2
-            data['RD-Y'] = (data['miny'] + data['maxy']) / 2
+        #if ('minx') in data.columns and ('lat') not in data.columns:
+        #    data['RD-X'] = (data['minx'] + data['maxx']) / 2
+        #    data['RD-Y'] = (data['miny'] + data['maxy']) / 2
             #print(data)
             # convert RD N to WGS84 into Series
             #latlon = data.apply(lambda row: proj.transform(crs_rd, crs_wgs, row['RD-X'], row['RD-Y']), axis=1).apply(pd.Series)
@@ -136,19 +181,26 @@ def load_crow(datadir):
             #print(latlon)
             # Merge with dataFrame
             #data = pd.concat([data,latlon], axis=1)
-            #print(data)
-        df = df.append(data)
-        print("added " + f)
-    
-    # change column to datatime
+            #print(data.head())
+        
     print(df.columns)
     #df['Aanmaakdatum_score']= df['Aanmaakdatum_score'].apply(pd.to_datetime)
     # Create shapely point object
     #geometry = [Point(xy) for xy in zip(df['lat'], df['lon'])]
     # Convert to lossless binary to load properly into Postgis
     #df['geom'] = geometry.wkb_hex
-    df.rename(columns={'Well ID (customer)': 'Well ID customer'},inplace=True)
 
+
+
+
+    LOCAL_POSTGRES_URL = URL(
+        drivername='postgresql',
+        username=config.get(dbConfig,'user'),
+        password=config.get(dbConfig,'password'),
+        host=config.get(dbConfig,'host'),
+        port=config.get(dbConfig,'port'),
+        database=config.get(dbConfig,'dbname')
+    )
 
     # Write our data to database
     tableName = 'crowscores'
@@ -158,22 +210,25 @@ def load_crow(datadir):
 
 
 
-def main(datadir):
-     pg_str = get_pg_str(config.get(dbConfig,'host'),config.get(dbConfig,'port'),config.get(dbConfig,'dbname'), config.get(dbConfig,'user'), config.get(dbConfig,'password'))
-   
-    #path = os.getcwd()
-    load_crow(datadir)
-    load_gebieden(pg_str)
+def main(datadir, dbConfig):
+    pg_str = get_pg_str(config.get(dbConfig,'host'),config.get(dbConfig,'port'),config.get(dbConfig,'dbname'), config.get(dbConfig,'user'), config.get(dbConfig,'password'))
+    
+    load_crow(datadir, dbConfig)
+    #load_gebieden(pg_str)
+
 
 if __name__ == '__main__':
     desc = 'Upload crow datasets into PostgreSQL.'
     parser = argparse.ArgumentParser(desc)
     parser.add_argument(
         'datadir', type=str, help='Local data directory', nargs=1)
+    parser.add_argument(
+        'dbConfig', type=str, help='database config settings: dev or docker', nargs=1)
     args = parser.parse_args()
+
     # Check whether local cached downloads should be used.
     ENV_VAR = 'EXTERNAL_DATASERVICES_USE_LOCAL'
     use_local = True if os.environ.get(ENV_VAR, '') == 'TRUE' else False
 
     if not use_local:
-        main(args.datadir[0])
+        main(args.datadir[0], args.dbConfig[0])

@@ -22,13 +22,12 @@ UPDATE crowscores
     SET geom = 
       CASE 
         WHEN 
-          "X" is not null
-        THEN 
-          ST_PointFromText('POINT('||"X"::double precision||' '||"Y"::double precision||')',28992)
-            WHEN 
-              maxx is not null
-             -- create polygon from minmax
-           THEN ST_SetSRID(ST_ENVELOPE(('LINESTRING('||minx||' '||miny||', '||maxx||' '||maxy||')')::geometry), 28992) 
+          maxx is not null
+        THEN ST_SetSRID(ST_ENVELOPE(('LINESTRING('||minx::double precision||' '||miny::double precision||', '||maxx::double precision||' '||maxy::double precision||')')::geometry), 28992) 
+      WHEN 
+          "XMAX" is not null
+        THEN ST_SetSRID(ST_ENVELOPE(('LINESTRING('||"XMIN"::double precision||' '||"YMIN"::double precision||', '||"XMAX"::double precision||' '||"YMAX"::double precision||')')::geometry), 28992) 
+        
         WHEN 
           lon is not null
         THEN 
@@ -47,7 +46,8 @@ UPDATE crowscores
 """
 
 addAreaCodes = """
-DROP TABLE IF EXISTS crowscores_totaal;
+DROP view if exists crowscores_csv CASCADE;
+DROP TABLE IF EXISTS crowscores_totaal CASCADE;
 SELECT 
   e.*, 
   g.naam as gebiedsnaam, 
@@ -96,6 +96,7 @@ ADD PRIMARY KEY (id);
 """
 
 crowscoresView = """
+DROP view if exists crowscores_csv CASCADE;
 create view
   crowscores_csv
 as select
