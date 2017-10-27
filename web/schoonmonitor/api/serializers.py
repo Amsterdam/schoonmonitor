@@ -22,8 +22,8 @@ class BeeldmaatlatSerializer(GeoFeatureModelSerializer):
 
     class Meta:
         model = Beeldmaatlat
-        geo_field = 'meetgebied'
-        fields = 'Score', 'Bestekspost','Aanmaakdatum_score'
+        geo_field = 'geom'
+        fields = 'score', 'bestekspost','aanmaakdatum_score'
 
 class MeldingSerializer(GeoFeatureModelSerializer):
     """ A class to serialize locations as GeoJSON compatible data """
