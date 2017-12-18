@@ -21,7 +21,7 @@ Install the packages
 pip install -r requirements.txt
 ```
 
-Before you can login to the site, you must create the tables and an admin useraccount in the database:
+Before you can use the api you must create a config.ini file
 ```
 create a config.ini file with the user and password credentials using the config.ini.example file
 ```
