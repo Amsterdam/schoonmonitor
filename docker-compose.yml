@@ -37,3 +37,19 @@ services:
       command: >
         bash -c "/app/run_import.sh \
                && /app/run_additional_sql.sh"
+  cmsdownloader:
+      build: ./cmsdownloader
+      links:
+        - database:database
+      volumes:
+        - ./data:/data
+      environment:
+        DATABASE_NAME: schoonmonitor
+        DATABASE_USER: schoonmonitor
+        DATABASE_PASSWORD: insecure
+        # Following are secret, should be provided as environment variables.
+        EXTERN_DATASERVICES_PASSWORD:
+      command: >
+        bash -c "/app/run_cmsdownloader.sh" \
+              && "/app/run_load_json2pg.sh"
+
