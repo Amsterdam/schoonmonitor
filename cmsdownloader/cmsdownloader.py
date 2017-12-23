@@ -66,12 +66,10 @@ def getContainer(session, cookies, endpoint, containerId):
 def main(baseUrl, endpoints, folder):
     """Get Containers."""
     with requests.Session() as session:
-        data = []
-       
         cookies = get_login_cookies(session, baseUrl)
-
         for endpoint in endpoints:
             n = 1
+            data = []
             ListURI = session.get(baseUrl + '/api/' + endpoint + '.json', cookies=cookies)
             List = ListURI.json()
             #print(containerList['containers'][0])
