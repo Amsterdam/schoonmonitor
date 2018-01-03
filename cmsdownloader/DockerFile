@@ -1,4 +1,4 @@
-FROM amsterdam/docker_python:latest
+FROM amsterdam/python
 
 RUN rm -rf /data
 RUN mkdir /data
