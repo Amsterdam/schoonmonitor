@@ -214,7 +214,7 @@ def main(datadir, dbConfig):
     pg_str = get_pg_str(config.get(dbConfig,'host'),config.get(dbConfig,'port'),config.get(dbConfig,'dbname'), config.get(dbConfig,'user'), config.get(dbConfig,'password'))
     
     load_crow(datadir, dbConfig)
-    #load_gebieden(pg_str)
+    load_gebieden(pg_str)
 
 
 if __name__ == '__main__':

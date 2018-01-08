@@ -24,10 +24,9 @@ UPDATE crowscores
         WHEN 
           maxx is not null
         THEN ST_SetSRID(ST_ENVELOPE(('LINESTRING('||minx::double precision||' '||miny::double precision||', '||maxx::double precision||' '||maxy::double precision||')')::geometry), 28992) 
-      WHEN 
+        WHEN 
           "XMAX" is not null
         THEN ST_SetSRID(ST_ENVELOPE(('LINESTRING('||"XMIN"::double precision||' '||"YMIN"::double precision||', '||"XMAX"::double precision||' '||"YMAX"::double precision||')')::geometry), 28992) 
-        
         WHEN 
           lon is not null
         THEN 
