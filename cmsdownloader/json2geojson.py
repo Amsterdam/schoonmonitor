@@ -2,7 +2,10 @@ import json
 
 
 def flatten_json(y):
-    """https://towardsdatascience.com/flattening-json-objects-in-python-f5343c794b10"""
+    """
+        Flatten nested json to ['key.subkey.subsubkey'] values
+        https://towardsdatascience.com/flattening-json-objects-in-python-f5343c794b10
+    """
     out = {}
 
     def flatten(x, name=''):
@@ -28,27 +31,37 @@ def jsonPoints2geojson(df, latColumn, lonColumn):
     """
     geojson = {'type': 'FeatureCollection', 'features': []}
     for item in df:
-        feature = {'type': 'Feature',
-                   'properties': item}
-        feature['geometry'] = {'type': 'Point',
-                               'coordinates': [float(item[lonColumn]),
-                                               float(item[latColumn])]}
-        geojson['features'].append(feature)
+        print(item)
+        item = flatten_json(item)
+        print(item)
+        if lonColumn:
+            feature = {'type': 'Feature',
+                       'properties': item}
+            feature['geometry'] = {'type': 'Point',
+                                   'coordinates': [float(item[lonColumn]),
+                                                   float(item[latColumn])
+                                                   ]}
+            geojson['features'].append(feature)
     return geojson
 
 
 def openJsonArrayKeyDict2FlattenedJson(fileName):
+    """
+        Open json and return array of objects without object value name.
+        For example: [{'container':{...}}, {'container':{...}}] returns now as [{...},{...}])
+    """
     with open(fileName, 'r') as response:
         data = json.loads(response.read())
         objectKeyName = list(data[0].keys())[0]
+        #objectKeyName = str(objectKeyName, 'utf-8')
         print(fileName + " object opened")
-        data = [flatten_json(item[objectKeyName]) for item in data]
-        print(data[0])
+        data = [item[objectKeyName] for item in data]
+        #print(data[0])
     return data
 
 
 def joinByKeyNames(geojson, dataset, key1, key2):
-    """Insert data from dataset to a geojson where key1 from dataset matches key2 in geojson"""
+    """Insert data from dataset to a geojson where key1 from dataset matches key2 in the geojson."""
     n = 1
     for feature in geojson['features']:
         matches = [item for item in dataset
@@ -63,16 +76,13 @@ def joinByKeyNames(geojson, dataset, key1, key2):
 
 
 def main():
+    # Prepare values for functions
     fileName = 'data/wells.json'
     fileName2 = 'data/containers.json'
-
-    wells = openJsonArrayKeyDict2FlattenedJson(fileName)
-    containers = openJsonArrayKeyDict2FlattenedJson(fileName2)
-
     lat = 'location.position.latitude'
-    lon = 'location.position.longitude'
-
-    waste_descriptions = [{"id": 1, "waste_name": "Rest"},
+    lon = 'location.position.longitude'  # for use later in flattened json as item['location.position.longitude']
+    waste_descriptions = [
+                  {"id": 1, "waste_name": "Rest"},
                   {"id": 2, "waste_name": "Glas"},
                   {"id": 3, "waste_name": "Glas"},
                   {"id": 6, "waste_name": "Papier"},
@@ -82,8 +92,13 @@ def main():
                   {"id": 25, "waste_name": "Plastic"}]
 
     with open('data/afvalcontainers.geojson', 'w') as outFile:
+        wells = openJsonArrayKeyDict2FlattenedJson(fileName)
+        containers = openJsonArrayKeyDict2FlattenedJson(fileName2)
+        # Build Geojson from wells
         geojson = jsonPoints2geojson(wells, lat, lon)
+        # Add containers to wells
         joinByKeyNames(geojson, containers, 'id', 'containers.0')
+        # Add descriptions to containers
         joinByKeyNames(geojson, waste_descriptions, 'id', 'waste_type')
         json.dump(geojson, outFile, indent=2)
         print ('written geojson')
