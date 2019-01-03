@@ -5,7 +5,7 @@ pyproj==1.9.5.1
 python-dateutil==2.6.1
 python-keystoneclient==3.14.0
 python-swiftclient==3.4.0
-requests==2.18.4
+requests==2.20.0
 Shapely==1.6.1
 SQLAlchemy==1.1.14
 xlrd==1.1.0
